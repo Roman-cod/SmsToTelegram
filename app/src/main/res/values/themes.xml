@@ -1,0 +1,4 @@
+﻿<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.SmsToTelegram" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    </style>
+</resources>

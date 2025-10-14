@@ -1,0 +1,24 @@
+﻿# Gradle & Android Studio
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IDE and OS
+.idea/
+*.iml
+local.properties
+
+# Binaries, archives, logs
+*.apk
+*.aab
+*.keystore
+*.jks
+*.zip
+*.log
+SmsToTelegram_backup.zip
+
+# Others
+captures/
+.externalNativeBuild/

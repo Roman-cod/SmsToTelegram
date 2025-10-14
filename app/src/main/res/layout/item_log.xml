@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView android:id="@+id/tvSender" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <TextView android:id="@+id/tvBody" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+    <TextView android:id="@+id/tvTime" android:textSize="12sp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+
+</LinearLayout>
