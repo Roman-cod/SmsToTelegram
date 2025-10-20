@@ -22,7 +22,7 @@ versionProps['VERSION_CODE'] = versionCodeValue.toString()
 versionProps.store(versionPropsFile.newWriter(), null)
 
 // Версия для отображения (можно менять вручную)
-def versionNameValue = "1.1.0"
+def versionNameValue = "1.2.0"
 
 android {
     namespace 'com.example.sms2tg'
@@ -87,4 +87,7 @@ dependencies {
 
     // Lifecycle
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.4"
+
+    implementation "androidx.work:work-runtime-ktx:2.9.1"
+
 }

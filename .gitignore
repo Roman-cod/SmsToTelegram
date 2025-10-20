@@ -22,3 +22,7 @@ SmsToTelegram_backup.zip
 # Others
 captures/
 .externalNativeBuild/
+
+# Release artifacts
+/app/release/output-metadata.json
+/app/release/baselineProfiles/
