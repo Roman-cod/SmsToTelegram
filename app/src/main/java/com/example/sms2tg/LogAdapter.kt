@@ -1,4 +1,4 @@
-﻿package com.example.sms2tg
+package com.example.sms2tg
 
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 class LogAdapter : ListAdapter<LogEntity, LogAdapter.VH>(DIFF) {
+
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<LogEntity>() {
             override fun areItemsTheSame(oldItem: LogEntity, newItem: LogEntity) = oldItem.id == newItem.id
@@ -16,10 +17,17 @@ class LogAdapter : ListAdapter<LogEntity, LogAdapter.VH>(DIFF) {
         }
     }
 
-    class VH(view: View) : RecyclerView.ViewHolder(view) {
+    inner class VH(view: View) : RecyclerView.ViewHolder(view) {
         val tvSender: TextView = view.findViewById(R.id.tvSender)
         val tvBody: TextView = view.findViewById(R.id.tvBody)
         val tvTime: TextView = view.findViewById(R.id.tvTime)
+
+        fun bind(item: LogEntity) {
+            tvSender.text = item.sender
+            tvBody.text = item.body        // ✅ заменено message → body
+            tvTime.text = java.text.SimpleDateFormat.getDateTimeInstance()
+                .format(java.util.Date(item.timestamp))
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -28,9 +36,6 @@ class LogAdapter : ListAdapter<LogEntity, LogAdapter.VH>(DIFF) {
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = getItem(position)
-        holder.tvSender.text = item.sender
-        holder.tvBody.text = item.body
-        holder.tvTime.text = java.text.SimpleDateFormat.getDateTimeInstance().format(java.util.Date(item.timestamp))
+        holder.bind(getItem(position))
     }
 }

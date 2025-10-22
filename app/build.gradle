@@ -22,7 +22,7 @@ versionProps['VERSION_CODE'] = versionCodeValue.toString()
 versionProps.store(versionPropsFile.newWriter(), null)
 
 // Версия для отображения (можно менять вручную)
-def versionNameValue = "1.2.0"
+def versionNameValue = "1.2.1"
 
 android {
     namespace 'com.example.sms2tg'

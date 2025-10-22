@@ -39,19 +39,29 @@ class SmsReceiver : BroadcastReceiver() {
 
             Log.i("SmsToTelegram", "📨 SMS from $sender: $messageBody")
 
-            // Выполняем запись в базу в фоне
+            // Обрабатываем SMS в фоне (не блокируя UI)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
+                    // 1️⃣ Сохраняем в очередь для отложенной отправки
                     val queueManager = MessageQueueManager(context)
                     queueManager.addToQueue(sender, messageBody, System.currentTimeMillis())
                     Log.d("SmsToTelegram", "✅ Added to queue: $sender -> $messageBody")
 
-                    // Планируем отправку при появлении сети
+                    // 2️⃣ Записываем в лог для отображения в UI
+                    try {
+                        val db = AppDatabase.get(context)
+                        db.logDao().insert(LogEntity(0, sender, messageBody, System.currentTimeMillis()))
+                        Log.d("SmsToTelegram", "📝 Log inserted: $sender -> ${messageBody.take(50)}")
+                    } catch (dbEx: Exception) {
+                        Log.e("SmsToTelegram", "❌ Failed to insert log", dbEx)
+                    }
+
+                    // 3️⃣ Планируем отложенную отправку, если сети нет
                     SendPendingWorker.schedule(context)
                     Log.d("SmsToTelegram", "📆 SendPendingWorker scheduled with network constraint")
 
                 } catch (e: Exception) {
-                    Log.e("SmsToTelegram", "❌ Failed to insert to queue", e)
+                    Log.e("SmsToTelegram", "❌ Failed to process SMS", e)
                 }
             }
 
