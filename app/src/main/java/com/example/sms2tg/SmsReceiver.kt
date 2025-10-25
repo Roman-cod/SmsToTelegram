@@ -13,60 +13,89 @@ import kotlinx.coroutines.launch
 class SmsReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != "android.provider.Telephony.SMS_RECEIVED") return
         Log.d("SmsToTelegram", "📩 SMS_RECEIVED triggered")
 
-        val bundle: Bundle? = intent.extras
-        if (bundle == null) {
-            Log.w("SmsToTelegram", "⚠️ No extras in intent")
+        val bundle: Bundle = intent.extras ?: run {
+            Log.w("SmsToTelegram", "No extras in SMS intent")
             return
         }
 
-        try {
-            val pdus = bundle["pdus"] as? Array<*>
-            if (pdus == null || pdus.isEmpty()) {
-                Log.w("SmsToTelegram", "⚠️ No PDUs in SMS intent")
-                return
+        val pdus = bundle.get("pdus") as? Array<*> ?: run {
+            Log.w("SmsToTelegram", "No PDUs in bundle")
+            return
+        }
+        val format = bundle.getString("format")
+
+        val messages = pdus.mapNotNull { pdu ->
+            try {
+                SmsMessage.createFromPdu(pdu as ByteArray, format)
+            } catch (e: Exception) {
+                Log.e("SmsToTelegram", "createFromPdu failed", e)
+                null
             }
+        }
+        if (messages.isEmpty()) {
+            Log.w("SmsToTelegram", "No valid SMS messages after parsing PDUs")
+            return
+        }
 
-            var messageBody = ""
-            var sender = ""
+        // ЕДИНЫЙ sender и собранный текст
+        val sender: String = messages.firstOrNull()?.originatingAddress.orEmpty()
+        val fullText: String = messages
+            .sortedBy { it.timestampMillis }
+            .joinToString(separator = "") { it.messageBody.orEmpty() }
 
-            for (pdu in pdus) {
-                val msg = SmsMessage.createFromPdu(pdu as ByteArray)
-                messageBody += msg.messageBody
-                sender = msg.originatingAddress ?: ""
-            }
+        Log.i("SmsToTelegram", "📨 SMS from $sender: ${fullText.take(200)}${if (fullText.length > 200) "..." else ""}")
 
-            Log.i("SmsToTelegram", "📨 SMS from $sender: $messageBody")
+        // Всё, что блокирующее: в корутине на IO
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val db = AppDatabase.get(context)
 
-            // Обрабатываем SMS в фоне (не блокируя UI)
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    // 1️⃣ Сохраняем в очередь для отложенной отправки
-                    val queueManager = MessageQueueManager(context)
-                    queueManager.addToQueue(sender, messageBody, System.currentTimeMillis())
-                    Log.d("SmsToTelegram", "✅ Added to queue: $sender -> $messageBody")
-
-                    // 2️⃣ Записываем в лог для отображения в UI
-                    try {
-                        val db = AppDatabase.get(context)
-                        db.logDao().insert(LogEntity(0, sender, messageBody, System.currentTimeMillis()))
-                        Log.d("SmsToTelegram", "📝 Log inserted: $sender -> ${messageBody.take(50)}")
-                    } catch (dbEx: Exception) {
-                        Log.e("SmsToTelegram", "❌ Failed to insert log", dbEx)
-                    }
-
-                    // 3️⃣ Планируем отложенную отправку, если сети нет
-                    SendPendingWorker.schedule(context)
-                    Log.d("SmsToTelegram", "📆 SendPendingWorker scheduled with network constraint")
-
-                } catch (e: Exception) {
-                    Log.e("SmsToTelegram", "❌ Failed to process SMS", e)
+                // 1) Проверка по блок-листу
+                val blocked = db.blockedSenderDao().getAll()
+                val isBlocked = blocked.any { rule ->
+                    // Явно укажем ignoreCase, чтобы не было неоднозначности вызова
+                    sender.contains(rule.pattern, ignoreCase = true)
                 }
-            }
 
-        } catch (e: Exception) {
-            Log.e("SmsToTelegram", "❌ Error in SmsReceiver", e)
+                if (isBlocked) {
+                    // Пишем в лог пометку и выходим без отправки
+                    db.logDao().insert(
+                        LogEntity(
+                            id = 0,
+                            sender = sender.ifEmpty { "unknown" },
+                            body = "[BLOCKED] $fullText",
+                            timestamp = System.currentTimeMillis()
+                        )
+                    )
+                    Log.d("SmsToTelegram", "🚫 Blocked by rule; sender=$sender")
+                    return@launch
+                }
+
+                // 2) Обычная логика: лог + постановка в очередь для оффлайна
+                db.logDao().insert(
+                    LogEntity(
+                        id = 0,
+                        sender = sender.ifEmpty { "unknown" },
+                        body = fullText,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+
+                MessageQueueManager(context).addToQueue(
+                    sender = sender,
+                    body = fullText,
+                    timestamp = System.currentTimeMillis()
+                )
+
+                // Планируем отправку (требует сети; уйдёт когда появится)
+                SendPendingWorker.schedule(context)
+
+            } catch (e: Exception) {
+                Log.e("SmsToTelegram", "Error in SmsReceiver coroutine", e)
+            }
         }
     }
 }

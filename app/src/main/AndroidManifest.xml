@@ -28,6 +28,12 @@
             </intent-filter>
         </activity>
 
+        <!-- 🧱 Новый экран: список заблокированных отправителей -->
+        <activity
+            android:name=".BlockedListActivity"
+            android:exported="true"
+            android:label="Список блокировок" />
+
         <!-- Ресивер для приёма SMS -->
         <receiver
             android:name=".SmsReceiver"
@@ -37,8 +43,6 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
-
-        <!-- ⚙️ NetworkChangeReceiver больше не нужен после перехода на WorkManager -->
 
     </application>
 </manifest>

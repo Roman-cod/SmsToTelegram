@@ -1,6 +1,7 @@
 package com.example.sms2tg
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
@@ -27,19 +28,19 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Настройка списка логов
+        // --- Инициализация списка логов ---
         adapter = LogAdapter()
         binding.rvLogs.layoutManager = LinearLayoutManager(this)
         binding.rvLogs.adapter = adapter
 
         val db = AppDatabase.get(this)
-
-        // Загружаем настройки
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
+        // --- Загрузка сохранённых настроек ---
         binding.etToken.setText(prefs.getString("bot_token", ""))
         binding.etChatId.setText(prefs.getString("chat_id", ""))
 
-        // --- Кнопка "Сохранить настройки" ---
+        // --- Сохранить настройки ---
         binding.btnSave.setOnClickListener {
             val token = binding.etToken.text.toString().trim()
             val chatId = binding.etChatId.text.toString().trim()
@@ -50,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "✅ Настройки сохранены", Toast.LENGTH_SHORT).show()
         }
 
-        // --- Кнопка "Тестовая отправка" ---
+        // --- Тестовая отправка ---
         binding.btnTestSend.setOnClickListener {
             val token = prefs.getString("bot_token", "")
             val chatId = prefs.getString("chat_id", "")
@@ -75,12 +76,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // --- Кнопка "Очистить лог" ---
+        // --- Очистить лог ---
         binding.btnClearLogs.setOnClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
                 db.logDao().clearAll()
             }
             Toast.makeText(this, "🧹 Логи очищены", Toast.LENGTH_SHORT).show()
+        }
+
+        // --- Открыть список заблокированных отправителей ---
+        binding.btnBlockedList.setOnClickListener {
+            val intent = Intent(this, BlockedListActivity::class.java)
+            startActivity(intent)
         }
 
         // --- Автоматическое обновление логов ---
@@ -92,10 +99,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // --- Проверка разрешений ---
         checkAndRequestSmsPermissions()
     }
 
-    // --- Проверка разрешений ---
     private fun checkAndRequestSmsPermissions() {
         val permissions = arrayOf(
             Manifest.permission.RECEIVE_SMS,
@@ -117,6 +124,16 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
             Toast.makeText(this, "📱 Разрешения получены", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // При возврате с экрана блок-листа перезагружаем логи
+        lifecycleScope.launch {
+            val db = AppDatabase.get(this@MainActivity)
+            val logs = withContext(Dispatchers.IO) { db.logDao().getLast(100) }
+            adapter.submitList(logs)
         }
     }
 }

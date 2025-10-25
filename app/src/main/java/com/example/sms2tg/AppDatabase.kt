@@ -5,10 +5,19 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-// Версия увеличена до 2, чтобы пересоздать таблицу при несовпадении имени
-@Database(entities = [LogEntity::class], version = 2)
+@Database(
+    entities = [
+        LogEntity::class,
+        PendingMessage::class,
+        BlockedSender::class
+    ],
+    version = 4,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun logDao(): LogDao
+    abstract fun pendingDao(): PendingDao
+    abstract fun blockedSenderDao(): BlockedSenderDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -20,10 +29,9 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sms2tg.db"
                 )
-                // Пересоздаёт БД при изменении схемы (для разработки)
-                .fallbackToDestructiveMigration()
-                .build()
-                .also { INSTANCE = it }
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
     }
 }

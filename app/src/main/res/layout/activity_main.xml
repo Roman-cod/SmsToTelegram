@@ -64,11 +64,20 @@
             android:layout_marginStart="8dp" />
     </LinearLayout>
 
+    <!-- 🧩 Новая кнопка: переход к списку блокировок -->
+    <Button
+        android:id="@+id/btnBlockedList"
+        android:text="Список блокировок"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="8dp">
+
         <CheckBox
             android:id="@+id/chDebug"
             android:layout_width="wrap_content"
