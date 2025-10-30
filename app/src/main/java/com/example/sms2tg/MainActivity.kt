@@ -40,6 +40,19 @@ class MainActivity : AppCompatActivity() {
         binding.etToken.setText(prefs.getString("bot_token", ""))
         binding.etChatId.setText(prefs.getString("chat_id", ""))
 
+        // --- Инициализация чекбокса Debug Mode ---
+        val savedDebug = prefs.getBoolean("debug_mode", false)
+        binding.chDebug.isChecked = savedDebug
+
+        binding.chDebug.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("debug_mode", isChecked).apply()
+            Toast.makeText(
+                this,
+                if (isChecked) "🪲 Debug Mode: ON" else "🚫 Debug Mode: OFF",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
         // --- Сохранить настройки ---
         binding.btnSave.setOnClickListener {
             val token = binding.etToken.text.toString().trim()

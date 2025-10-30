@@ -1,7 +1,7 @@
 package com.example.sms2tg
 
 import android.os.Bundle
-import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -29,20 +29,23 @@ class BlockedListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_blocked_list)
 
+        // Кнопка "Назад" и заголовок
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = getString(R.string.blocked_list)
+
         etPattern = findViewById(R.id.etPattern)
         btnAdd = findViewById(R.id.btnAdd)
         rvList = findViewById(R.id.rvBlocked)
 
+        // Адаптер с кнопкой удаления
         adapter = BlockedAdapter(
-            onLongClick = { item: BlockedSender ->
+            onDelete = { item: BlockedSender ->
                 AlertDialog.Builder(this)
                     .setTitle("Удалить отправителя?")
                     .setMessage("Вы уверены, что хотите удалить '${item.pattern}' из списка?")
                     .setPositiveButton("Удалить") { _, _ ->
                         lifecycleScope.launch {
-                            withContext(Dispatchers.IO) {
-                                dao.delete(item)
-                            }
+                            withContext(Dispatchers.IO) { dao.delete(item) }
                             Toast.makeText(this@BlockedListActivity, "Удалено", Toast.LENGTH_SHORT).show()
                             loadData()
                         }
@@ -56,6 +59,7 @@ class BlockedListActivity : AppCompatActivity() {
         rvList.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         rvList.adapter = adapter
 
+        // Добавление с проверкой уникальности
         btnAdd.setOnClickListener {
             val pattern = etPattern.text.toString().trim()
             if (pattern.isEmpty()) {
@@ -64,16 +68,28 @@ class BlockedListActivity : AppCompatActivity() {
             }
 
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    dao.insert(BlockedSender(pattern = pattern))
+                val exists = withContext(Dispatchers.IO) { dao.exists(pattern) > 0 }
+                if (exists) {
+                    Toast.makeText(this@BlockedListActivity, "Этот шаблон уже добавлен", Toast.LENGTH_SHORT).show()
+                } else {
+                    withContext(Dispatchers.IO) { dao.insert(BlockedSender(pattern = pattern)) }
+                    Toast.makeText(this@BlockedListActivity, "Добавлено", Toast.LENGTH_SHORT).show()
+                    etPattern.setText("")
+                    loadData()
                 }
-                Toast.makeText(this@BlockedListActivity, "Добавлено", Toast.LENGTH_SHORT).show()
-                etPattern.setText("")
-                loadData()
             }
         }
 
         loadData()
+    }
+
+    // Обработка кнопки "Назад"
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun loadData() {
@@ -85,8 +101,9 @@ class BlockedListActivity : AppCompatActivity() {
         }
     }
 
+    // --- внутренний адаптер ---
     private class BlockedAdapter(
-        private val onLongClick: (BlockedSender) -> Unit
+        private val onDelete: (BlockedSender) -> Unit
     ) : RecyclerView.Adapter<BlockedVH>() {
 
         private val data: MutableList<BlockedSender> = mutableListOf()
@@ -98,9 +115,9 @@ class BlockedListActivity : AppCompatActivity() {
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BlockedVH {
-            val view = LayoutInflater.from(parent.context)
+            val view = android.view.LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_blocked_sender, parent, false)
-            return BlockedVH(view, onLongClick)
+            return BlockedVH(view, onDelete)
         }
 
         override fun onBindViewHolder(holder: BlockedVH, position: Int) {
@@ -108,5 +125,20 @@ class BlockedListActivity : AppCompatActivity() {
         }
 
         override fun getItemCount(): Int = data.size
+    }
+
+    // --- ViewHolder с кнопкой удаления ---
+    private class BlockedVH(
+        itemView: android.view.View,
+        private val onDelete: (BlockedSender) -> Unit
+    ) : RecyclerView.ViewHolder(itemView) {
+
+        private val tvPattern: TextView = itemView.findViewById(R.id.tvPattern)
+        private val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+
+        fun bind(item: BlockedSender) {
+            tvPattern.text = item.pattern
+            btnDelete.setOnClickListener { onDelete(item) }
+        }
     }
 }

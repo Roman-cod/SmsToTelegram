@@ -40,7 +40,7 @@ class SmsReceiver : BroadcastReceiver() {
             return
         }
 
-        // ЕДИНЫЙ sender и собранный текст
+        // Единый sender и собранный текст
         val sender: String = messages.firstOrNull()?.originatingAddress.orEmpty()
         val fullText: String = messages
             .sortedBy { it.timestampMillis }
@@ -53,36 +53,21 @@ class SmsReceiver : BroadcastReceiver() {
             try {
                 val db = AppDatabase.get(context)
 
-                // 1) Проверка по блок-листу
+                // 1️⃣ Проверка по блок-листу
                 val blocked = db.blockedSenderDao().getAll()
                 val isBlocked = blocked.any { rule ->
-                    // Явно укажем ignoreCase, чтобы не было неоднозначности вызова
                     sender.contains(rule.pattern, ignoreCase = true)
                 }
 
                 if (isBlocked) {
-                    // Пишем в лог пометку и выходим без отправки
-                    db.logDao().insert(
-                        LogEntity(
-                            id = 0,
-                            sender = sender.ifEmpty { "unknown" },
-                            body = "[BLOCKED] $fullText",
-                            timestamp = System.currentTimeMillis()
-                        )
-                    )
+                    // 🚫 Запись в лог только при включённом Debug Mode
+                    Logger.i(context, sender.ifEmpty { "unknown" }, "[BLOCKED] $fullText")
                     Log.d("SmsToTelegram", "🚫 Blocked by rule; sender=$sender")
                     return@launch
                 }
 
-                // 2) Обычная логика: лог + постановка в очередь для оффлайна
-                db.logDao().insert(
-                    LogEntity(
-                        id = 0,
-                        sender = sender.ifEmpty { "unknown" },
-                        body = fullText,
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                // 2️⃣ Обычная логика: лог + постановка в очередь
+                Logger.i(context, sender.ifEmpty { "unknown" }, fullText)
 
                 MessageQueueManager(context).addToQueue(
                     sender = sender,
@@ -90,11 +75,13 @@ class SmsReceiver : BroadcastReceiver() {
                     timestamp = System.currentTimeMillis()
                 )
 
-                // Планируем отправку (требует сети; уйдёт когда появится)
+                // Планируем отправку (WorkManager выполнит при появлении сети)
                 SendPendingWorker.schedule(context)
 
             } catch (e: Exception) {
                 Log.e("SmsToTelegram", "Error in SmsReceiver coroutine", e)
+                // Лог ошибки (если Debug Mode включён)
+                Logger.e(context, "SmsReceiver", "Error: ${e.message}")
             }
         }
     }
