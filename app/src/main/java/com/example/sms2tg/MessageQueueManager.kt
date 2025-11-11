@@ -14,7 +14,7 @@ import android.util.Log
  *  val sentCount = qm.trySendAllPending()
  *
  * Логика:
- *  - Сообщения сохраняются в Room (QueueDatabase).
+ *  - Сообщения сохраняются в Room (AppDatabase → PendingDao).
  *  - trySendAllPending() при каждой попытке считывает все pending, берет текущие bot token/chat id из SharedPreferences,
  *    пробует отправить каждое через TelegramClient; при успехе удаляет запись.
  *
@@ -23,7 +23,7 @@ import android.util.Log
  *  - Возвращает количество успешно отправленных сообщений.
  */
 class MessageQueueManager(private val context: Context) {
-    private val db = QueueDatabase.get(context)
+    private val db = AppDatabase.get(context)       // ✅ заменили QueueDatabase на AppDatabase
     private val dao = db.pendingDao()
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
@@ -45,15 +45,6 @@ class MessageQueueManager(private val context: Context) {
     /**
      * Попытаться отправить все накопленные сообщения.
      * Возвращает количество успешно отправленных записей.
-     *
-     * Алгоритм:
-     *  - Считываем все pending.
-     *  - Получаем token / chatId из SharedPreferences.
-     *  - Если token/chatId пустые — не отправляем ничего (возвращаем 0).
-     *  - Для каждого сообщения пробуем отправить через TelegramClient.sendMessage().
-     *    При успехе удаляем запись.
-     *
-     * NOTE: это синхронная операция — запускать в background (Worker/Executor).
      */
     fun trySendAllPending(): Int {
         val all = try {
@@ -98,9 +89,7 @@ class MessageQueueManager(private val context: Context) {
         return successCount
     }
 
-    /**
-     * Полная очистка очереди (удалить всё) — пригодится для кнопки "Clear pending" если понадобится.
-     */
+    /** Полная очистка очереди (удалить всё) */
     fun clearAll() {
         try {
             dao.clearAll()
