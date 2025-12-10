@@ -64,6 +64,36 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
+        // --- Инициализация чекбокса Battery Monitor ---
+        val savedBattery = prefs.getBoolean("battery_monitor", false)
+        binding.chBatteryMonitor.isChecked = savedBattery
+        
+        // Перезапускаем сервис, если галочка стояла (для восстановления после закрытия activity, если сервис мог умереть)
+        if (savedBattery) { 
+           val intent = Intent(this, BatteryMonitorService::class.java)
+           if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+               startForegroundService(intent)
+           } else {
+               startService(intent)
+           }
+        }
+
+        binding.chBatteryMonitor.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("battery_monitor", isChecked).apply()
+            val intent = Intent(this, BatteryMonitorService::class.java)
+            if (isChecked) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+                Toast.makeText(this, "🔋 Battery Monitor: ON", Toast.LENGTH_SHORT).show()
+            } else {
+                stopService(intent)
+                Toast.makeText(this, "🛑 Battery Monitor: OFF", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // --- Сохранить настройки ---
         binding.btnSave.setOnClickListener {
             val token = binding.etToken.text.toString().trim()

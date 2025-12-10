@@ -83,6 +83,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Debug Mode" />
+            
+        <CheckBox
+            android:id="@+id/chBatteryMonitor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔋 Battery Monitor"
+            android:layout_marginStart="16dp" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
