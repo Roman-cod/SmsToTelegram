@@ -25,7 +25,19 @@ import android.util.Log
 class MessageQueueManager(private val context: Context) {
     private val db = AppDatabase.get(context)       // ✅ заменили QueueDatabase на AppDatabase
     private val dao = db.pendingDao()
-    private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    private val prefs = run {
+        val masterKey = androidx.security.crypto.MasterKey.Builder(context)
+            .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        androidx.security.crypto.EncryptedSharedPreferences.create(
+            context,
+            "secret_settings",
+            masterKey,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
 
     /**
      * Добавить SMS в очередь.
@@ -72,13 +84,14 @@ class MessageQueueManager(private val context: Context) {
         for (msg in all) {
             try {
                 val text = "📩 SMS from: ${msg.sender}\n\n${msg.body}"
-                val ok = client.sendMessage(token, chatId, text)
-                if (ok) {
+                val result = client.sendMessage(token, chatId, text)
+                if (result is TelegramClient.Result.Success) {
                     dao.deleteById(msg.id)
                     successCount++
                     Log.d("SmsToTelegram", "Sent queued msg id=${msg.id}")
                 } else {
-                    Log.w("SmsToTelegram", "Failed to send queued msg id=${msg.id} — will retry later")
+                    val errorMsg = (result as? TelegramClient.Result.Error)?.message ?: "Unknown error"
+                    Log.w("SmsToTelegram", "Failed to send queued msg id=${msg.id}: $errorMsg — will retry later")
                 }
             } catch (e: Exception) {
                 Log.e("SmsToTelegram", "Exception sending queued msg id=${msg.id}", e)

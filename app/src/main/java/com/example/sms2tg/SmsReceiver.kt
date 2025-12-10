@@ -48,6 +48,9 @@ class SmsReceiver : BroadcastReceiver() {
 
         Log.i("SmsToTelegram", "📨 SMS from $sender: ${fullText.take(200)}${if (fullText.length > 200) "..." else ""}")
 
+        // ⚠️ ВАЖНО: Используем goAsync(), чтобы система не убила Receiver, пока работает корутина
+        val pendingResult = goAsync()
+
         // Всё, что блокирующее: в корутине на IO
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -82,6 +85,9 @@ class SmsReceiver : BroadcastReceiver() {
                 Log.e("SmsToTelegram", "Error in SmsReceiver coroutine", e)
                 // Лог ошибки (если Debug Mode включён)
                 Logger.e(context, "SmsReceiver", "Error: ${e.message}")
+            } finally {
+                // ✅ Обязательно завершаем PendingResult, чтобы отпустить Receiver
+                pendingResult.finish()
             }
         }
     }

@@ -34,7 +34,18 @@ class MainActivity : AppCompatActivity() {
         binding.rvLogs.adapter = adapter
 
         val db = AppDatabase.get(this)
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        // --- Инициализация EncryptedSharedPreferences ---
+        val masterKey = androidx.security.crypto.MasterKey.Builder(this)
+            .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val prefs = androidx.security.crypto.EncryptedSharedPreferences.create(
+            this,
+            "secret_settings",
+            masterKey,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
 
         // --- Загрузка сохранённых настроек ---
         binding.etToken.setText(prefs.getString("bot_token", ""))
@@ -61,7 +72,7 @@ class MainActivity : AppCompatActivity() {
                 .putString("bot_token", token)
                 .putString("chat_id", chatId)
                 .apply()
-            Toast.makeText(this, "✅ Настройки сохранены", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "✅ Настройки сохранены (Зашифровано)", Toast.LENGTH_SHORT).show()
         }
 
         // --- Тестовая отправка ---
@@ -76,10 +87,14 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val tg = TelegramClient(this@MainActivity)
-                    val ok = tg.sendMessage(token, chatId, "🤖 Тестовое сообщение из SmsToTelegram!")
+                    val result = tg.sendMessage(token, chatId, "🤖 Тестовое сообщение из SmsToTelegram!")
                     withContext(Dispatchers.Main) {
-                        if (ok) Toast.makeText(this@MainActivity, "✅ Сообщение отправлено", Toast.LENGTH_SHORT).show()
-                        else Toast.makeText(this@MainActivity, "❌ Ошибка отправки", Toast.LENGTH_SHORT).show()
+                        if (result is TelegramClient.Result.Success) {
+                            Toast.makeText(this@MainActivity, "✅ Сообщение отправлено", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val errorMsg = (result as? TelegramClient.Result.Error)?.message ?: "Unknown error"
+                            Toast.makeText(this@MainActivity, "❌ Ошибка: $errorMsg", Toast.LENGTH_LONG).show()
+                        }
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {

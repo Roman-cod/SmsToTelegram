@@ -8,7 +8,12 @@ import java.net.URLEncoder
 
 class TelegramClient(private val context: Context) {
 
-    fun sendMessage(token: String, chatId: String, text: String): Boolean {
+    sealed class Result {
+        object Success : Result()
+        data class Error(val message: String, val exception: Exception? = null) : Result()
+    }
+
+    fun sendMessage(token: String, chatId: String, text: String): Result {
         try {
             val url = URL("https://api.telegram.org/bot${token}/sendMessage")
             val postData = "chat_id=" + URLEncoder.encode(chatId, "UTF-8") +
@@ -27,11 +32,17 @@ class TelegramClient(private val context: Context) {
                 }
             }
             val code = conn.responseCode
+            val responseMessage = conn.responseMessage
             conn.disconnect()
-            return code >= 200 && code < 300
+
+            return if (code in 200..299) {
+                Result.Success
+            } else {
+                Result.Error("HTTP Error $code: $responseMessage")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            return false
+            return Result.Error("Network Error: ${e.message}", e)
         }
     }
 }
