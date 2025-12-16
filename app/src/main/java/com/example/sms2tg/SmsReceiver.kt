@@ -58,14 +58,30 @@ class SmsReceiver : BroadcastReceiver() {
 
                 // 1️⃣ Проверка по блок-листу
                 val blocked = db.blockedSenderDao().getAll()
+                
                 val isBlocked = blocked.any { rule ->
-                    sender.contains(rule.pattern, ignoreCase = true)
+                    // 1. Прямое текстовое совпадение (для Tele2, Info и т.д., а также точных совпадений)
+                    if (sender.contains(rule.pattern, ignoreCase = true)) return@any true
+                    
+                    // 2. Нормализация (только цифры) для телефонов (например, +7 (999)... vs 8999...)
+                    val cleanSender = sender.filter { it.isDigit() }
+                    val cleanRule = rule.pattern.filter { it.isDigit() }
+                    
+                    // Если правило содержит цифры (это телефон), проверяем совпадение по цифрам
+                    if (cleanRule.isNotEmpty() && cleanSender.isNotEmpty()) {
+                        cleanSender.contains(cleanRule)
+                    } else {
+                        false
+                    }
                 }
 
                 if (isBlocked) {
                     // 🚫 Запись в лог только при включённом Debug Mode
                     Logger.i(context, sender.ifEmpty { "unknown" }, "[BLOCKED] $fullText")
                     Log.d("SmsToTelegram", "🚫 Blocked by rule; sender=$sender")
+                    
+                    // 🛑 Останавливаем распространение SMS (чтобы не попало во входящие)
+                    pendingResult.abortBroadcast()
                     return@launch
                 }
 

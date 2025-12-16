@@ -52,11 +52,12 @@ class MainActivity : AppCompatActivity() {
         binding.etChatId.setText(prefs.getString("chat_id", ""))
 
         // --- Инициализация чекбокса Debug Mode ---
-        val savedDebug = prefs.getBoolean("debug_mode", false)
-        binding.chDebug.isChecked = savedDebug
+        // ИСПРАВЛЕНО: Читаем из обычных настроек (Prefs), так как Logger читает оттуда
+        binding.chDebug.isChecked = Prefs.isDebug(this)
 
         binding.chDebug.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("debug_mode", isChecked).apply()
+            // ИСПРАВЛЕНО: Пишем в обычные настройки
+            Prefs.setDebug(this, isChecked)
             Toast.makeText(
                 this,
                 if (isChecked) "🪲 Debug Mode: ON" else "🚫 Debug Mode: OFF",
@@ -152,7 +153,10 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 db.logDao().observeLast(100).collectLatest { logs ->
-                    adapter.submitList(logs)
+                    adapter.submitList(logs) {
+                        // Авто-прокрутка к самому свежему логу (вверх)
+                        binding.rvLogs.scrollToPosition(0)
+                    }
                 }
             }
         }

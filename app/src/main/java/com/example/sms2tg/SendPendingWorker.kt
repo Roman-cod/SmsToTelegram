@@ -46,10 +46,15 @@ class SendPendingWorker(
                 .setConstraints(constraints)
                 .build()
 
+            // FIX: Use Unique Work to prevent parallel execution (Race Condition Fix)
             WorkManager.getInstance(context)
-                .enqueue(workRequest)
+                .enqueueUniqueWork(
+                    "SendPendingSmsWork",
+                    androidx.work.ExistingWorkPolicy.APPEND,
+                    workRequest
+                )
 
-            Log.d("SmsToTelegram", "SendPendingWorker scheduled with network constraint")
+            Log.d("SmsToTelegram", "SendPendingWorker scheduled (Unique/APPEND)")
         }
     }
 }
