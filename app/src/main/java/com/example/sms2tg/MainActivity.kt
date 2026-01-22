@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // --- Инициализация чекбокса Battery Monitor ---
-        val savedBattery = prefs.getBoolean("battery_monitor", false)
+        val savedBattery = prefs.getBoolean("battery_monitor", true)
         binding.chBatteryMonitor.isChecked = savedBattery
         
         // Перезапускаем сервис, если галочка стояла (для восстановления после закрытия activity, если сервис мог умереть)

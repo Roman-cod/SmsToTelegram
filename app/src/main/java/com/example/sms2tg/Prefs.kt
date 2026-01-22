@@ -9,7 +9,7 @@ object Prefs {
 
     fun isDebug(context: Context): Boolean =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getBoolean(KEY_DEBUG, false)
+            .getBoolean(KEY_DEBUG, true)
 
     fun setDebug(context: Context, value: Boolean) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
