@@ -16,4 +16,7 @@ object Prefs {
             putBoolean(KEY_DEBUG, value)
         }
     }
+    fun isBatteryMonitorEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean("battery_monitor", true)
 }

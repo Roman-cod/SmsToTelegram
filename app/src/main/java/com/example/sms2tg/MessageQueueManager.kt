@@ -25,7 +25,7 @@ import android.util.Log
 class MessageQueueManager(private val context: Context) {
     private val db = AppDatabase.get(context)       // ✅ заменили QueueDatabase на AppDatabase
     private val dao = db.pendingDao()
-    private val prefs = run {
+    private val prefs by lazy {
         val masterKey = androidx.security.crypto.MasterKey.Builder(context)
             .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
             .build()
