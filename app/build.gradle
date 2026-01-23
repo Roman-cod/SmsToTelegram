@@ -8,21 +8,22 @@ def versionPropsFile = file("$rootDir/version.properties")
 if (!versionPropsFile.exists()) {
     // Если файл не существует, создаем с начальными значениями
     versionPropsFile.createNewFile()
-    versionPropsFile.text = "VERSION_CODE=1"
+    // Убедимся, что обе переменные инициализированы
+    versionPropsFile.text = "VERSION_CODE=1\nVERSION_NAME=1.0.0"
 }
 
 def Properties versionProps = new Properties()
 versionProps.load(new FileInputStream(versionPropsFile))
 
 // Увеличиваем versionCode на 1
-def versionCodeValue = versionProps['VERSION_CODE'].toInteger() + 1
+def versionCodeValue = versionProps.getProperty('VERSION_CODE', '0').toInteger() + 1
 versionProps['VERSION_CODE'] = versionCodeValue.toString()
 
-// Сохраняем обратно в файл
-versionProps.store(versionPropsFile.newWriter(), null)
+// Версия для отображения (читается из version.properties). Используем '1.0.0' как запасное значение.
+def versionNameValue = versionProps.getProperty('VERSION_NAME', '1.0.0')
 
-// Версия для отображения (можно менять вручную)
-def versionNameValue = "2.3.0"
+// Сохраняем обратно в файл. Здесь сохраняются все свойства, включая обновленный VERSION_CODE и (если был) VERSION_NAME.
+versionProps.store(versionPropsFile.newWriter(), null)
 
 android {
     namespace 'com.example.sms2tg'
