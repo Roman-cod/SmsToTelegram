@@ -38,6 +38,12 @@
             android:exported="true"
             android:label="Список блокировок" />
 
+        <!-- 📄 Новый экран: справка / about -->
+        <activity
+            android:name=".HelpActivity"
+            android:exported="false"
+            android:label="@string/help" />
+
         <!-- Сервис для мониторинга батареи -->
         <service
             android:name=".BatteryMonitorService"

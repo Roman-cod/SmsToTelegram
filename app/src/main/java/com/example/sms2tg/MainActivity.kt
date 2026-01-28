@@ -149,6 +149,12 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        // --- Открыть справку / about ---
+        binding.btnHelp.setOnClickListener {
+            val intent = Intent(this, HelpActivity::class.java)
+            startActivity(intent)
+        }
+
         // --- Автоматическое обновление логов ---
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
