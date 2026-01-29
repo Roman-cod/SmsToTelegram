@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Block S2T, tuned for readability at 24dp -->
+    <!-- S (x:1..7, y:4..20, stroke:3) -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M1,4 H7 V7 H1 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M1,10 H7 V13 H1 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M1,17 H7 V20 H1 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M1,4 H4 V13 H1 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M4,10 H7 V20 H4 Z" />
+
+    <!-- 2 (x:9..15) -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M9,4 H15 V7 H9 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M12,4 H15 V10 H12 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M9,10 H15 V13 H9 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M9,13 H12 V17 H9 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M9,17 H15 V20 H9 Z" />
+
+    <!-- T (x:17..23) -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M17,4 H23 V7 H17 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M19,4 H21 V20 H19 Z" />
+
+</vector>

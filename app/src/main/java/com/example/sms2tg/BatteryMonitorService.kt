@@ -78,8 +78,9 @@ class BatteryMonitorService : Service() {
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("SmsToTelegram Battery Monitor")
-            .setContentText("Monitoring battery levels...")
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentText("Monitoring battery levels and SMS ...")
+        //    .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification5)
             .setContentIntent(pendingIntent)
             .build()
 

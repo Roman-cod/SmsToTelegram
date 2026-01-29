@@ -1,0 +1,132 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="48dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!--
+      S2T v5 FINAL
+      - Stroke thickness: 8 units
+      - Outer corners rounded (R≈2), inner corners sharp
+      - Tall layout (like v4): top/mid/bottom bars at y=4..12, 32..40, 60..68
+      - T top bar widened: x=74..118
+      - "2" bottom-left seam fixed by rounding outer bottom-left of lower-left vertical
+    -->
+
+    <!-- ===== S ===== -->
+
+    <!-- top bar (outer rounded) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+            M6,4 H30
+            C31.1,4 32,4.9 32,6
+            V10
+            C32,11.1 31.1,12 30,12
+            H6
+            C4.9,12 4,11.1 4,10
+            V6
+            C4,4.9 4.9,4 6,4 Z" />
+
+    <!-- middle bar (sharp corners to avoid internal artifacts) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,32 H32 V40 H4 Z" />
+
+    <!-- bottom bar (outer rounded) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+            M6,60 H30
+            C31.1,60 32,60.9 32,62
+            V66
+            C32,67.1 31.1,68 30,68
+            H6
+            C4.9,68 4,67.1 4,66
+            V62
+            C4,60.9 4.9,60 6,60 Z" />
+
+    <!-- left upper vertical (sharp; internal joins stay clean) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,6 H12 V40 H4 Z" />
+
+    <!-- right lower vertical (sharp; internal joins stay clean) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,32 H32 V66 H24 Z" />
+
+
+    <!-- ===== 2 (fixed bottom seam) ===== -->
+
+    <!-- top bar (outer rounded) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+            M44,4 H68
+            C69.1,4 70,4.9 70,6
+            V10
+            C70,11.1 69.1,12 68,12
+            H44
+            C42.9,12 42,11.1 42,10
+            V6
+            C42,4.9 42.9,4 44,4 Z" />
+
+    <!-- upper right vertical (sharp) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M62,6 H70 V32 H62 Z" />
+
+    <!-- middle bar (sharp corners) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M42,32 H70 V40 H42 Z" />
+
+    <!-- lower left vertical (outer bottom-left rounded only) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+            M42,40
+            H50
+            V60
+            V66
+            C50,67.1 49.1,68 48,68
+            H44
+            C42.9,68 42,67.1 42,66
+            Z" />
+
+    <!-- bottom bar (outer rounded) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+            M44,60 H68
+            C69.1,60 70,60.9 70,62
+            V66
+            C70,67.1 69.1,68 68,68
+            H44
+            C42.9,68 42,67.1 42,66
+            V62
+            C42,60.9 42.9,60 44,60 Z" />
+
+
+    <!-- ===== T ===== -->
+
+    <!-- top bar (widened, outer rounded) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="
+            M76,4 H116
+            C117.1,4 118,4.9 118,6
+            V10
+            C118,11.1 117.1,12 116,12
+            H76
+            C74.9,12 74,11.1 74,10
+            V6
+            C74,4.9 74.9,4 76,4 Z" />
+
+    <!-- stem (sharp) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M92,6 H100 V68 H92 Z" />
+
+</vector>
