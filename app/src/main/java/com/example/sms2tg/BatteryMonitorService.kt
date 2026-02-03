@@ -95,14 +95,12 @@ class BatteryMonitorService : Service() {
         }
 
         // 2. Re-arm: If battery level increased, update our known level.
-        // This ensures that if we charged from 30 to 70, we are ready to fire 50 again on the way down.
         if (currentLevel > lastReportedLevel!!) {
             lastReportedLevel = currentLevel
             return
         }
 
         // 3. Trigger: If battery level decreased, check if we crossed any threshold.
-        // Logic: Did we pass a threshold T such that: lastLevel > T >= currentLevel?
         if (currentLevel < lastReportedLevel!!) {
             val crossed = thresholds.any { t -> lastReportedLevel!! > t && currentLevel <= t }
             
@@ -118,36 +116,20 @@ class BatteryMonitorService : Service() {
     private fun sendTelegramAlert(level: Int) {
         serviceScope.launch {
             try {
-                // Read Prefs usually happens on UI thread or requires context.
-                // We'll read them here securely.
-                val masterKey = androidx.security.crypto.MasterKey.Builder(applicationContext)
-                    .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
-                    .build()
+                val message = "🔋 Battery Level: $level%"
+                
+                // Записываем в локальный лог приложения
+                Logger.i(applicationContext, "Battery", message)
 
-                val prefs = androidx.security.crypto.EncryptedSharedPreferences.create(
-                    applicationContext,
-                    "secret_settings",
-                    masterKey,
-                    androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-                )
+                // Добавляем в очередь сообщений (та же логика, что и для SMS)
+                val qm = MessageQueueManager(applicationContext)
+                qm.addToQueue(sender = "Battery", body = message)
 
-                val token = prefs.getString("bot_token", "")
-                val chatId = prefs.getString("chat_id", "")
+                // Планируем отправку через WorkManager (он отправит сразу, если есть сеть, или позже)
+                SendPendingWorker.schedule(applicationContext)
 
-                if (!token.isNullOrBlank() && !chatId.isNullOrBlank()) {
-                    val message = "🔋 Battery Level: $level%"
-                    val tg = TelegramClient(applicationContext)
-                    val result = tg.sendMessage(token, chatId, message)
-                    
-                    if (result is TelegramClient.Result.Success) {
-                        Logger.i(applicationContext, "BatteryService", "Sent alert: $message")
-                    } else {
-                        Logger.e(applicationContext, "BatteryService", "Failed to send alert")
-                    }
-                }
             } catch (e: Exception) {
-                Logger.e(applicationContext, "BatteryService", "Error sending alert: ${e.message}")
+                Logger.e(applicationContext, "BatteryService", "Error queuing battery alert: ${e.message}")
             }
         }
     }

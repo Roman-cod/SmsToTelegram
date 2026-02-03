@@ -5,25 +5,9 @@ import android.util.Log
 
 /**
  * Менеджер очереди сообщений.
- *
- * Использование:
- *  val qm = MessageQueueManager(context)
- *  qm.addToQueue(sender, body)
- *
- *  // Из WorkManager:
- *  val sentCount = qm.trySendAllPending()
- *
- * Логика:
- *  - Сообщения сохраняются в Room (AppDatabase → PendingDao).
- *  - trySendAllPending() при каждой попытке считывает все pending, берет текущие bot token/chat id из SharedPreferences,
- *    пробует отправить каждое через TelegramClient; при успехе удаляет запись.
- *
- * Примечания:
- *  - Метод trySendAllPending() выполняется в том потоке, в котором вызывается (в Worker он уже background).
- *  - Возвращает количество успешно отправленных сообщений.
  */
 class MessageQueueManager(private val context: Context) {
-    private val db = AppDatabase.get(context)       // ✅ заменили QueueDatabase на AppDatabase
+    private val db = AppDatabase.get(context)
     private val dao = db.pendingDao()
     private val prefs by lazy {
         val masterKey = androidx.security.crypto.MasterKey.Builder(context)
@@ -40,13 +24,12 @@ class MessageQueueManager(private val context: Context) {
     }
 
     /**
-     * Добавить SMS в очередь.
-     * Возвращает id добавленной записи (Long)
+     * Добавить сообщение в очередь.
      */
     fun addToQueue(sender: String, body: String, timestamp: Long = System.currentTimeMillis()): Long {
         return try {
             val id = dao.insert(PendingMessage(sender = sender, body = body, timestamp = timestamp))
-            Log.d("SmsToTelegram", "Queued SMS id=$id sender=$sender body=${body.take(80)}")
+            Log.d("SmsToTelegram", "Queued message id=$id sender=$sender body=${body.take(80)}")
             id
         } catch (e: Exception) {
             Log.e("SmsToTelegram", "Failed to insert to queue", e)
@@ -56,7 +39,6 @@ class MessageQueueManager(private val context: Context) {
 
     /**
      * Попытаться отправить все накопленные сообщения.
-     * Возвращает количество успешно отправленных записей.
      */
     fun trySendAllPending(): Int {
         val all = try {
@@ -74,7 +56,7 @@ class MessageQueueManager(private val context: Context) {
         val token = prefs.getString("bot_token", "") ?: ""
         val chatId = prefs.getString("chat_id", "") ?: ""
         if (token.isBlank() || chatId.isBlank()) {
-            Log.w("SmsToTelegram", "No bot_token or chat_id configured — not sending pending messages")
+            Log.w("SmsToTelegram", "No bot_token or chat_id configured")
             return 0
         }
 
@@ -83,7 +65,13 @@ class MessageQueueManager(private val context: Context) {
 
         for (msg in all) {
             try {
-                val text = "📩 SMS from: ${msg.sender}\n\n${msg.body}"
+                // Разделяем логику формирования текста: для системы/батареи или для SMS
+                val text = if (msg.sender == "Battery" || msg.sender == "System") {
+                    msg.body
+                } else {
+                    "📩 SMS from: ${msg.sender}\n\n${msg.body}"
+                }
+
                 val result = client.sendMessage(token, chatId, text)
                 if (result is TelegramClient.Result.Success) {
                     dao.deleteById(msg.id)
@@ -91,10 +79,10 @@ class MessageQueueManager(private val context: Context) {
                     Log.d("SmsToTelegram", "Sent queued msg id=${msg.id}")
                 } else {
                     val errorMsg = (result as? TelegramClient.Result.Error)?.message ?: "Unknown error"
-                    Log.w("SmsToTelegram", "Failed to send queued msg id=${msg.id}: $errorMsg — will retry later")
+                    Log.w("SmsToTelegram", "Failed to send msg id=${msg.id}: $errorMsg")
                 }
             } catch (e: Exception) {
-                Log.e("SmsToTelegram", "Exception sending queued msg id=${msg.id}", e)
+                Log.e("SmsToTelegram", "Exception sending msg id=${msg.id}", e)
             }
         }
 
@@ -102,11 +90,9 @@ class MessageQueueManager(private val context: Context) {
         return successCount
     }
 
-    /** Полная очистка очереди (удалить всё) */
     fun clearAll() {
         try {
             dao.clearAll()
-            Log.d("SmsToTelegram", "Cleared all pending messages")
         } catch (e: Exception) {
             Log.e("SmsToTelegram", "Failed to clear pending", e)
         }
