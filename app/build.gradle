@@ -50,6 +50,13 @@ android {
         }
     }
 
+    // Настройка имени APK файла: projectName_VersionName_buildType.apk
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "${rootProject.name}_${variant.versionName}_${variant.buildType.name}.apk"
+        }
+    }
+
     buildFeatures {
         viewBinding true
     }
