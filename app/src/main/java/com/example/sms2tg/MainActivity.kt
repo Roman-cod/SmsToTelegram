@@ -3,6 +3,7 @@ package com.example.sms2tg
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -50,6 +51,14 @@ class MainActivity : AppCompatActivity() {
         // --- Загрузка сохранённых настроек ---
         binding.etToken.setText(prefs.getString("bot_token", ""))
         binding.etChatId.setText(prefs.getString("chat_id", ""))
+
+        // --- Загрузка или инициализация имени устройства ---
+        var deviceName = prefs.getString("device_name", "")
+        if (deviceName.isNullOrBlank()) {
+            deviceName = Build.MODEL
+            prefs.edit().putString("device_name", deviceName).apply()
+        }
+        binding.etDeviceName.setText(deviceName)
 
         // --- Инициализация чекбокса Debug Mode ---
         // ИСПРАВЛЕНО: Читаем из обычных настроек (Prefs), так как Logger читает оттуда
@@ -99,9 +108,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener {
             val token = binding.etToken.text.toString().trim()
             val chatId = binding.etChatId.text.toString().trim()
+            val deviceName = binding.etDeviceName.text.toString().trim()
             prefs.edit()
                 .putString("bot_token", token)
                 .putString("chat_id", chatId)
+                .putString("device_name", deviceName)
                 .apply()
             Toast.makeText(this, "✅ Настройки сохранены (Зашифровано)", Toast.LENGTH_SHORT).show()
         }
@@ -110,6 +121,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnTestSend.setOnClickListener {
             val token = prefs.getString("bot_token", "")
             val chatId = prefs.getString("chat_id", "")
+            val deviceName = prefs.getString("device_name", Build.MODEL)
+
             if (token.isNullOrBlank() || chatId.isNullOrBlank()) {
                 Toast.makeText(this, "⚠️ Заполните Token и Chat ID", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
@@ -118,7 +131,7 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val tg = TelegramClient(this@MainActivity)
-                    val result = tg.sendMessage(token, chatId, "🤖 Тестовое сообщение из SmsToTelegram!")
+                    val result = tg.sendMessage(token, chatId, "[$deviceName] 🤖 Тестовое сообщение из SmsToTelegram!")
                     withContext(Dispatchers.Main) {
                         if (result is TelegramClient.Result.Success) {
                             Toast.makeText(this@MainActivity, "✅ Сообщение отправлено", Toast.LENGTH_SHORT).show()

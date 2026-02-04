@@ -1,6 +1,7 @@
 package com.example.sms2tg
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 
 /**
@@ -55,6 +56,8 @@ class MessageQueueManager(private val context: Context) {
 
         val token = prefs.getString("bot_token", "") ?: ""
         val chatId = prefs.getString("chat_id", "") ?: ""
+        val deviceName = prefs.getString("device_name", Build.MODEL) ?: Build.MODEL
+        
         if (token.isBlank() || chatId.isBlank()) {
             Log.w("SmsToTelegram", "No bot_token or chat_id configured")
             return 0
@@ -65,11 +68,14 @@ class MessageQueueManager(private val context: Context) {
 
         for (msg in all) {
             try {
+                // Префикс с именем устройства для каждого сообщения
+                val devicePrefix = "[$deviceName]"
+                
                 // Разделяем логику формирования текста: для системы/батареи или для SMS
                 val text = if (msg.sender == "Battery" || msg.sender == "System") {
-                    msg.body
+                    "$devicePrefix ${msg.body}"
                 } else {
-                    "📩 SMS from: ${msg.sender}\n\n${msg.body}"
+                    "$devicePrefix 📩 SMS from: ${msg.sender}\n\n${msg.body}"
                 }
 
                 val result = client.sendMessage(token, chatId, text)
